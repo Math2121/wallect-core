@@ -27,7 +27,7 @@ type AccountGatewayMock struct {
 	mock.Mock
 }
 
-func (m *AccountGatewayMock) Save(account *entity.Account) error {
+func (m *AccountGatewayMock) Create(account *entity.Account) error {
 	args := m.Called(account)
 	return args.Error(0)
 }

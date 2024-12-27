@@ -29,7 +29,7 @@ func (uc *CreateAccountUseCase) Execute(input CreateAccountInputDto) (*CreateAcc
 	}
 
 	account := entity.NewAccount(client)
-	err = uc.AccountGateway.Save(account)
+	err = uc.AccountGateway.Create(account)
 	if err != nil {
 		return nil, err
 	}

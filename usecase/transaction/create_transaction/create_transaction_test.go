@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/Math2121/walletcore/entity"
+	"github.com/Math2121/walletcore/event"
+	"github.com/Math2121/walletcore/pkg/eventos/pkg/events"
 	createtransaction "github.com/Math2121/walletcore/usecase/transaction/create_transaction"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -22,7 +24,7 @@ type AccountGatewayMock struct {
 	mock.Mock
 }
 
-func (m *AccountGatewayMock) Save(account *entity.Account) error {
+func (m *AccountGatewayMock) Create(account *entity.Account) error {
 	args := m.Called(account)
 	return args.Error(0)
 }
@@ -54,7 +56,10 @@ func TestCreateTransactionUseCase(t *testing.T) {
 		AccountIDTo:   account2.ID,
 	}
 
-	uc := createtransaction.NewCreateTransactionUseCase(mockTransaction, mockAccount)
+	dispatcher := events.NewEventDispatcher()
+	event := event.NewTransactionCreated()
+
+	uc := createtransaction.NewCreateTransactionUseCase(mockTransaction, mockAccount, dispatcher, event)
 	output, err := uc.Execute(inputDto)
 	assert.Nil(t, err)
 	assert.NotNil(t, output)
