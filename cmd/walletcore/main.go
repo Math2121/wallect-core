@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
 	"github.com/Math2121/walletcore/database"
 	"github.com/Math2121/walletcore/event"
 	"github.com/Math2121/walletcore/pkg/eventos/pkg/events"
+	"github.com/Math2121/walletcore/pkg/uow"
 	createaccount "github.com/Math2121/walletcore/usecase/account/create_account"
 	createclient "github.com/Math2121/walletcore/usecase/client/create_client"
 	createtransaction "github.com/Math2121/walletcore/usecase/transaction/create_transaction"
@@ -27,11 +29,20 @@ func main() {
 
 	clientDb := database.NewClientDB(db)
 	accountDb := database.NewAccountDb(db)
-	transactionDb := database.NewTransactionDb(db)
+
+	ctx := context.Background()
+	uow := uow.NewUow(ctx, db)
+
+	uow.Register("AccountDb", func(tx *sql.Tx) interface{} {
+		return database.NewAccountDb(db)
+	})
+	uow.Register("TransactionDb", func(tx *sql.Tx) interface{} {
+		return database.NewTransactionDb(db)
+	})
 
 	createClientUseCase := createclient.NewCreateClientUseCase(clientDb)
 	createAccountUseCase := createaccount.NewCreateAccountUseCase(accountDb, clientDb)
-	createTransactionUseCase := createtransaction.NewCreateTransactionUseCase(transactionDb, accountDb, eventDispatcher, transactionCreatedEvent)
+	createTransactionUseCase := createtransaction.NewCreateTransactionUseCase(uow, eventDispatcher, transactionCreatedEvent)
 
 	webserver := webserver.NewWebServer(":3000")
 
