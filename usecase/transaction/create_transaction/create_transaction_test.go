@@ -1,11 +1,13 @@
 package createtransaction_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Math2121/walletcore/entity"
 	"github.com/Math2121/walletcore/event"
 	"github.com/Math2121/walletcore/pkg/eventos/pkg/events"
+	"github.com/Math2121/walletcore/usecase/mocks"
 	createtransaction "github.com/Math2121/walletcore/usecase/transaction/create_transaction"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -43,12 +45,10 @@ func TestCreateTransactionUseCase(t *testing.T) {
 	account2 := entity.NewAccount(client2)
 	account2.Credit(1000)
 
-	mockAccount := &AccountGatewayMock{}
-	mockAccount.On("FindById", account.ID).Return(account, nil)
-	mockAccount.On("FindById", account2.ID).Return(account2, nil)
+	mockUow := &mocks.UowMocks{}
+	mockUow.On("Do", mock.Anything, mock.Anything).Return(nil)
 
-	mockTransaction := &TransactionGatewayMock{}
-	mockTransaction.On("Create", mock.Anything).Return(nil)
+
 
 	inputDto := createtransaction.CreateTransactionInputDto{
 		Amount:        100,
@@ -58,15 +58,12 @@ func TestCreateTransactionUseCase(t *testing.T) {
 
 	dispatcher := events.NewEventDispatcher()
 	event := event.NewTransactionCreated()
+	ctx := context.Background()
 
-	uc := createtransaction.NewCreateTransactionUseCase(mockTransaction, mockAccount, dispatcher, event)
-	output, err := uc.Execute(inputDto)
+	uc := createtransaction.NewCreateTransactionUseCase(mockUow, dispatcher, event)
+	output, err := uc.Execute(ctx, inputDto)
 	assert.Nil(t, err)
 	assert.NotNil(t, output)
-	mockAccount.AssertExpectations(t)
-	mockTransaction.AssertExpectations(t)
-	mockAccount.AssertCalled(t, "FindById", account.ID)
-	mockAccount.AssertCalled(t, "FindById", account2.ID)
-	mockTransaction.AssertCalled(t, "Create", mock.Anything)
+	mockUow.AssertExpectations(t)
 
 }
