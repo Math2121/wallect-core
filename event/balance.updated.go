@@ -1,0 +1,29 @@
+package event
+
+import "time"
+
+type BalanceUpdated struct {
+	Name    string      `json:"name"`
+	Payload interface{} `json:"payload"`
+}
+
+func NewBalanceUpdated() *BalanceUpdated {	
+	return &BalanceUpdated{
+		Name: "BalanceUpdated",
+	}
+}
+func (e *BalanceUpdated) GetName() string {
+	return e.Name
+}
+
+func (e *BalanceUpdated) GetDateTime() time.Time {
+	return time.Now()
+}
+
+func (e *BalanceUpdated) GetPayload() interface{} {
+	return e.Payload
+}
+
+func (e *BalanceUpdated) SetPayload(payload interface{}) {
+	e.Payload = payload
+}
