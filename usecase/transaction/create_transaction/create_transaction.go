@@ -22,25 +22,36 @@ type CreateTransactionOutputDto struct {
 	Amount        float64 `json:"amount"`
 }
 
+type BalanceUpdateOutputDto struct {
+	AccountIDFrom            string `json:"account_id"`
+	AccountIDTo          string `json:"account_id_to"`
+	BalanceAccountIDFrom float64 `json:"balance_account_id_from"`
+	BalanceAccountIDTo   float64 `json:"balance_account_id_to"`
+}
+
 type CreateTransactionUseCase struct {
 	Uow                uow.UowInterface
 	EventDispatcher    events.EventDispatcherInterface
 	TransactionCreated events.EventInterface
+	BalanceUpdate      events.EventInterface
 }
 
 func NewCreateTransactionUseCase(Uow uow.UowInterface,
 	eventDispatcher events.EventDispatcherInterface,
 	transactionCreated events.EventInterface,
+	balanceUpdate events.EventInterface,
 ) *CreateTransactionUseCase {
 	return &CreateTransactionUseCase{
 		Uow:                Uow,
 		EventDispatcher:    eventDispatcher,
 		TransactionCreated: transactionCreated,
+		BalanceUpdate:      balanceUpdate,
 	}
 }
 
 func (u *CreateTransactionUseCase) Execute(ctx context.Context, input CreateTransactionInputDto) (*CreateTransactionOutputDto, error) {
 	output := &CreateTransactionOutputDto{}
+	balanceUpdateOutput := &BalanceUpdateOutputDto{}
 	err := u.Uow.Do(ctx, func(_ *uow.Uow) error {
 
 		accountRepo := u.getAccountRepository(ctx)
@@ -78,17 +89,24 @@ func (u *CreateTransactionUseCase) Execute(ctx context.Context, input CreateTran
 		output.AccountIDFrom = input.AccountIDFrom
 		output.AccountIDTo = input.AccountIDTo
 		output.Amount = input.Amount
+
+		balanceUpdateOutput.AccountIDFrom = input.AccountIDFrom
+		balanceUpdateOutput.AccountIDTo = input.AccountIDTo
+		balanceUpdateOutput.BalanceAccountIDFrom = accountFrom.Balance
+		balanceUpdateOutput.BalanceAccountIDTo = accountTo.Balance
 		return nil
 
 	})
-	
-	if err!= nil {
-        return nil, err
-    }
+
+	if err != nil {
+		return nil, err
+	}
 
 	u.TransactionCreated.SetPayload(output)
 	u.EventDispatcher.Dispatch(u.TransactionCreated)
 
+	u.BalanceUpdate.SetPayload(balanceUpdateOutput)
+	u.EventDispatcher.Dispatch(u.BalanceUpdate)
 	return output, nil
 
 }
